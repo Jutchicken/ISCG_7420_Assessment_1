@@ -1,0 +1,56 @@
+{% extends "HospitalSystem/Base.html" %}
+
+{% block title %}
+My Appointments
+{% endblock %}
+
+{% block content %}
+
+<h1>My Appointments</h1>
+
+{% for appointment in appointments %}
+    <div class="appointment-card">
+        <h2>
+            Appointment #{{ appointment.id }}
+        </h2>
+
+        <p>
+            Doctor: {{ appointment.doctor.get_full_name|default:appointment.doctor.username }}
+        </p>
+
+        <p>
+            Department: {{ appointment.department.name }}
+        </p>
+
+        <p>
+            Date: {{ appointment.appointment_date }}
+        </p>
+
+        <p>
+            Time: {{ appointment.appointment_time }}
+        </p>
+
+        <p>
+            Status: {{ appointment.appointment_status.name }}
+        </p>
+
+        <p>
+            Details: {{ appointment.appointment_details }}
+        </p>
+
+        {% if appointment.appointment_status.name|lower != "cancelled" %}
+            <a href="{% url 'appointment_edit' appointment.id %}">
+                Edit
+            </a>
+            &nbsp;
+            <a href="{% url 'appointment_cancel' appointment.id %}">Cancel</a>
+        {% endif %}
+    </div>
+    <hr>
+
+{% empty %}
+    <p>You currently have no appointments.</p>
+    <a href="{% url 'book_appointment' %}">Book your first appointment</a>
+
+{% endfor %}
+{% endblock %}

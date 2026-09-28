@@ -1,0 +1,44 @@
+{% extends "HospitalSystem/Base.html" %}
+
+{% block title %}
+Doctor Details
+{% endblock %}
+
+{% block content %}
+
+<h1>
+    Dr.
+    {% if doctor.user.get_full_name %}
+        {{ doctor.user.get_full_name }}
+    {% else %}
+        {{ doctor.user.username }}
+    {% endif %}
+</h1>
+
+<p>Department: {{ doctor.department.name }}</p>
+
+<hr>
+
+<h2>Consultation Schedule</h2>
+
+{% for appointment in appointments %}
+    <div>
+        <p>Date:{{ appointment.appointment_date }}</p>
+
+        <p>Time:{{ appointment.appointment_time }}</p>
+
+        <p>Status:{{ appointment.appointment_status.name }}</p>
+    </div>
+
+    <hr>
+
+{% empty %}
+    <p>No appointment schedule is currently available.</p>
+
+{% endfor %}
+
+<p>
+    <a href="{% url 'book_appointment' %}">Book Appointment</a>
+</p>
+
+{% endblock %}

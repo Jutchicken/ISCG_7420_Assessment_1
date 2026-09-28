@@ -1,11 +1,20 @@
 {% extends 'HospitalSystem/Base.html' %}
 {% block title %}
-    Login
+Login
 {% endblock %}
+
 {% block content %}
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Login</button>
-    </form>
+
+<h1>Login</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Login</button>
+</form>
+
+<p>
+    Don't have an account?
+    <a href="{% url 'register' %}">Register</a>
+</p>
 {% endblock %}

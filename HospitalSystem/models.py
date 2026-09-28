@@ -14,6 +14,13 @@ class Status(models.Model):
     def __str__(self):
         return self.name
 
+class Doctor(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Dr. {self.user.get_full_name() or self.user.username}"
+
 class Appointment(models.Model):
     patient = models.ForeignKey(
         User,
@@ -26,8 +33,8 @@ class Appointment(models.Model):
         related_name='doctor_appointments',
     )
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
-    appointment_date = models.DateTimeField(auto_now_add=True)
-    appointment_time = models.TimeField(auto_now_add=True)
+    appointment_date = models.DateField()
+    appointment_time = models.TimeField()
     appointment_status = models.ForeignKey(Status, on_delete=models.CASCADE)
     appointment_details = models.TextField()
 

@@ -1,0 +1,32 @@
+{% extends "HospitalSystem/Base.html" %}
+
+{% block title %}
+Doctors
+{% endblock %}
+
+{% block content %}
+
+<h1>Available Doctors</h1>
+
+{% for doctor in doctors %}
+    <div class="doctor-card">
+        <h2>
+            Dr.
+            {% if doctor.user.get_full_name %}
+                {{ doctor.user.get_full_name }}
+            {% else %}
+                {{ doctor.user.username }}
+            {% endif %}
+        </h2>
+
+        <p>Department: {{ doctor.department.name }}</p>
+
+        <a href="{% url 'doctor_detail' doctor.id %}">View Schedule</a>
+    </div>
+    <hr>
+
+{% empty %}
+    <p>No doctors are currently available.</p>
+
+{% endfor %}
+{% endblock %}

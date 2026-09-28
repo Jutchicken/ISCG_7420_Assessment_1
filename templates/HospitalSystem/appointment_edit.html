@@ -1,0 +1,59 @@
+{% extends "HospitalSystem/Base.html" %}
+
+{% block title %}
+Edit Appointment
+{% endblock %}
+
+{% block content %}
+
+<h1>Edit Appointment</h1>
+
+<p>
+    Current appointment:
+    {{ appointment.appointment_date }}
+    {{ appointment.appointment_time }}
+</p>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div>
+        {{ form.doctor.label_tag }}
+        {{ form.doctor }}
+        {{ form.doctor.errors }}
+    </div>
+
+    <div>
+        {{ form.appointment_date.label_tag }}
+        {{ form.appointment_date }}
+        {{ form.appointment_date.errors }}
+    </div>
+
+    <div>
+        {{ form.appointment_time.label_tag }}
+        {{ form.appointment_time }}
+        {{ form.appointment_time.errors }}
+    </div>
+
+    <div>
+        {{ form.appointment_details.label_tag }}
+        {{ form.appointment_details }}
+        {{ form.appointment_details.errors }}
+    </div>
+
+    <br>
+
+    <button type="submit">
+        Save Changes
+    </button>
+
+</form>
+
+<br>
+
+<a href="{% url 'appointment_list' %}">
+    Back to My Appointments
+</a>
+
+{% endblock %}

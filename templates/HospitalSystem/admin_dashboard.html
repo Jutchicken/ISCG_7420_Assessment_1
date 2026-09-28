@@ -1,0 +1,51 @@
+{% extends "HospitalSystem/Base.html" %}
+
+{% block title %}
+Administrator Dashboard
+{% endblock %}
+
+{% block content %}
+
+<h1>Piki Ora Medical Centre</h1>
+
+<h2>Administrator Dashboard</h2>
+
+<hr>
+
+<h3>Doctors</h3>
+
+<p>
+    Total Doctors: {{ doctors|length }}
+</p>
+
+<a href="{% url 'admin_doctor_list' %}">Manage Doctors</a>
+
+<hr>
+
+<h3>Appointments</h3>
+
+<p>
+    Total Appointments: {{ appointments|length }}
+</p>
+
+<a href="{% url 'admin_appointment_list' %}">Manage Appointments</a>
+
+<hr>
+
+<h3>Patients</h3>
+
+<p>
+    Total Patients: {{ patients|length }}
+</p>
+
+<a href="{% url 'admin_patient_list' %}">
+    Manage Patients
+</a>
+
+<hr>
+
+<a href="{% url 'home' %}">
+    Back to Home
+</a>
+
+{% endblock %}

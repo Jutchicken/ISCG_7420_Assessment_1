@@ -1,0 +1,43 @@
+{% extends "HospitalSystem/Base.html" %}
+
+{% block title %}
+Manage Doctors
+{% endblock %}
+
+{% block content %}
+
+<h1>Manage Doctors</h1>
+
+<a href="{% url 'admin_dashboard' %}">
+    Back to Dashboard
+</a>
+
+<hr>
+
+{% for doctor in doctors %}
+
+    <div>
+        <h2>
+            Dr. {{ doctor.user.get_full_name|default:doctor.user.username }}
+        </h2>
+
+        <p>
+            Username: {{ doctor.user.username }}
+        </p>
+
+        <p>
+            Email: {{ doctor.user.email }}
+        </p>
+
+        <p>
+            Department: {{ doctor.department.name }}
+        </p>
+
+        <a href="{% url 'admin_doctor_delete' doctor.id %}">Delete Doctor</a>
+    </div>
+    <hr>
+
+{% empty %}
+    <p>No doctors found.</p>
+{% endfor %}
+{% endblock %}

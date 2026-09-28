@@ -1,0 +1,43 @@
+{% extends "HospitalSystem/Base.html" %}
+
+{% block title %}
+Manage Patients
+{% endblock %}
+
+{% block content %}
+
+<h1>Manage Patient Accounts</h1>
+
+<a href="{% url 'admin_dashboard' %}">
+    Back to Dashboard
+</a>
+
+<hr>
+
+{% for patient in patients %}
+    <div>
+        <h2>
+            {{ patient.username }}
+        </h2>
+
+        <p>
+            Name: {{ patient.get_full_name }}
+        </p>
+
+        <p>
+            Email: {{ patient.email }}
+        </p>
+
+        <p>
+            Active: {{ patient.is_active }}
+        </p>
+    </div>
+    <hr>
+
+{% empty %}
+
+    <p>No patients found.</p>
+
+{% endfor %}
+
+{% endblock %}
