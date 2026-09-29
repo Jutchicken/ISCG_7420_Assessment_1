@@ -1,26 +1,16 @@
 {% extends "HospitalSystem/Base.html" %}
-
 {% block title %}
 Delete Doctor
 {% endblock %}
-
 {% block content %}
-
 <h1>Delete Doctor</h1>
-
 <p>
     Are you sure you want to delete
     Dr. {{ doctor.user.get_full_name|default:doctor.user.username }}?
 </p>
-
 <form method="post">
     {% csrf_token %}
-    <button type="submit">
-        Yes, Delete
-    </button>
-    <a href="{% url 'admin_doctor_list' %}">
-        Cancel
-    </a>
+    <button type="submit">Yes, Delete</button>
+    <a href="{% url 'admin_doctor_list' %}">Cancel</a>
 </form>
-
 {% endblock %}

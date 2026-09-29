@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.shortcuts import render, get_object_or_404, redirect
 
-from HospitalSystem.forms import RegisterForm, AppointmentForm, LoginForm, DoctorForm, DepartmentForm
+from HospitalSystem.forms import RegisterForm, AppointmentForm, DoctorForm, DepartmentForm
 from HospitalSystem.models import Doctor, Appointment, Status, Department
 
 
@@ -97,232 +97,156 @@ def dashboard(request):
     if is_patient(user):
         return redirect('patient_dashboard')
 
-    logout(request)
-    return redirect('login')
+    messages.error(request, 'Your account does not have a valid role.')
+    return redirect('home')
 
 
+@login_required
 def doctor_list(request):
-    doctors = Doctor.objects.select_related(
-        "user",
-        "department"
-    )
+    if not (is_admin(request.user) or is_patient(request.user)):
+        return redirect('dashboard')
 
-    return render(
-        request,
-        "HospitalSystem/doctor_list.html",
-        {"doctors": doctors}
-    )
+    doctors = Doctor.objects.select_related('user', 'department')
+    return render( request, 'HospitalSystem/doctor_list.html', {'doctors': doctors})
 
 
+@login_required
 def doctor_detail(request, doctor_id):
-
-    doctor = get_object_or_404(
-        Doctor.objects.select_related(
-            "user",
-            "department"
-        ),
-        id=doctor_id
-    )
-
-    appointments = Appointment.objects.filter(
-        doctor=doctor.user
-    ).select_related(
-        "department",
-        "appointment_status"
-    ).order_by(
-        "appointment_date",
-        "appointment_time"
-    )
-
-    return render(
-        request,
-        "HospitalSystem/doctor_detail.html",
-        {
-            "doctor": doctor,
-            "appointments": appointments,
-        }
-    )
+    if not (is_admin(request.user) or is_patient(request.user)):
+        return redirect('dashboard')
+    doctor = get_object_or_404(Doctor.objects.select_related('user', 'department'), id=doctor_id)
+    return render( request, 'HospitalSystem/doctor_detail.html', {'doctor': doctor})
 
 
 @login_required
 def book_appointment(request):
+    if not (is_admin(request.user) or is_patient(request.user)):
+        return redirect('dashboard')
 
-    if request.method == "POST":
-
-        form = AppointmentForm(
-            request.POST
-        )
+    if request.method == 'POST':
+        form = AppointmentForm(request.POST)
 
         if form.is_valid():
-            doctor = form.cleaned_data["doctor"]
-            appointment_date = form.cleaned_data["appointment_date"]
-            appointment_time = form.cleaned_data["appointment_time"]
+            appointment = form.save(commit=False)
+            doctor = appointment.doctor
 
-            already_booked = Appointment.objects.filter(
-                doctor=doctor.user,
-                appointment_date=appointment_date,
-                appointment_time=appointment_time,
+            existing = Appointment.objects.filter(
+                doctor=doctor,
+                appointment_date=appointment.appointment_date,
+                appointment_time=appointment.appointment_time
+            ).exclude(
+                appointment_status__name='Cancelled'
             ).exists()
 
-            if already_booked:
-                form.add_error(
-                    None,
-                    "This appointment slot is already booked."
+            if existing:
+                messages.error(request, 'This appointment slot is already booked.')
+
+                return render(
+                    request,
+                    'HospitalSystem/book_appointment.html',
+                    {'form': form}
                 )
+            appointment.patient = request.user
+            appointment.department = doctor.doctor_profile.department
+            pending_status, created = Status.objects.get_or_create(name='Pending')
+            appointment.appointment_status = pending_status
+            appointment.save()
+            messages.success(request, 'Appointment booked successfully.')
 
-            else:
-                appointment = form.save(
-                    commit=False
-                )
-
-                appointment.patient = request.user
-                appointment.department = doctor.department
-
-                # Find Pending status
-                pending_status = Status.objects.filter(
-                    name__iexact="Pending"
-                ).first()
-
-                if pending_status is None:
-                    form.add_error(
-                        None,
-                        "Pending appointment status does not exist."
-                    )
-
-                else:
-                    appointment.appointment_status = (pending_status)
-                    appointment.save()
-
-                    messages.success(
-                        request,
-                        "Your appointment has been booked successfully."
-                    )
-
-                    return redirect(
-                        "appointment_list"
-                    )
+            return redirect('appointment_list')
 
     else:
         form = AppointmentForm()
 
     return render(
         request,
-        "HospitalSystem/book_appointment.html",
+        'HospitalSystem/book_appointment.html',
         {
-            "form": form
+            'form': form
         }
     )
 
 
 @login_required
 def appointment_list(request):
+    if not (is_admin(request.user) or is_patient(request.user)):
+        return redirect('dashboard')
+
     appointments = Appointment.objects.filter(
         patient=request.user
     ).select_related(
-        "doctor",
-        "department",
-        "appointment_status",
+        'doctor',
+        'department',
+        'appointment_status'
     ).order_by(
-        "appointment_date",
-        "appointment_time"
+        'appointment_date',
+        'appointment_time'
     )
 
     return render(
         request,
-        "HospitalSystem/appointment_list.html",
+        'HospitalSystem/appointment_list.html',
         {
-            "appointments": appointments
+            'appointments': appointments
         }
     )
 
 
 @login_required
 def appointment_edit(request, appointment_id):
+    if not is_patient(request.user):
+        return redirect('dashboard')
+
     appointment = get_object_or_404(
         Appointment,
         id=appointment_id,
         patient=request.user
     )
 
-    if request.method == "POST":
-        form = AppointmentForm(
-            request.POST,
-            instance=appointment
-        )
+    if appointment.appointment_status.name == 'Cancelled':
+
+        messages.error(request, 'Cancelled appointments cannot be edited.')
+
+        return redirect('appointment_list')
+
+    if request.method == 'POST':
+        form = AppointmentForm(request.POST, instance=appointment)
 
         if form.is_valid():
-            doctor = form.cleaned_data["doctor"]
-            appointment_date = form.cleaned_data[
-                "appointment_date"
-            ]
+            new_appointment = form.save(commit=False)
 
-            appointment_time = form.cleaned_data["appointment_time"]
-
-            already_booked = Appointment.objects.filter(
-                doctor=doctor.user,
-                appointment_date=appointment_date,
-                appointment_time=appointment_time,
+            existing = Appointment.objects.filter(
+                doctor=new_appointment.doctor,
+                appointment_date=new_appointment.appointment_date,
+                appointment_time=new_appointment.appointment_time
             ).exclude(
                 id=appointment.id
+            ).exclude(
+                appointment_status__name='Cancelled'
             ).exists()
 
-            if already_booked:
-                form.add_error(
-                    None,
-                    "This appointment slot is already booked."
-                )
+            if existing:
+                messages.error(request, 'This appointment slot is already booked.')
+                return render(request, 'HospitalSystem/appointment_edit.html', {'form': form})
 
-            else:
-                updated_appointment = form.save(
-                    commit=False
-                )
+            new_appointment.patient = request.user
+            new_appointment.department = (new_appointment.doctor.doctor_profile.department)
+            new_appointment.appointment_status = (appointment.appointment_status)
+            new_appointment.save()
+            messages.success(request, 'Appointment updated successfully.')
 
-                updated_appointment.patient = request.user
-                updated_appointment.department = doctor.department
-
-                updated_appointment.appointment_status = (
-                    appointment.appointment_status
-                )
-
-                updated_appointment.save()
-
-                messages.success(
-                    request,
-                    "Your appointment has been updated successfully."
-                )
-
-                return redirect(
-                    "appointment_list"
-                )
+            return redirect('appointment_list')
 
     else:
-        # Convert existing User doctor back to Doctor
-        current_doctor = Doctor.objects.filter(
-            user=appointment.doctor
-        ).first()
+        form = AppointmentForm(instance=appointment)
 
-        initial_data = {}
-
-        if current_doctor:
-            initial_data["doctor"] = current_doctor
-
-        form = AppointmentForm(
-            instance=appointment,
-            initial=initial_data
-        )
-
-    return render(
-        request,
-        "HospitalSystem/appointment_edit.html",
-        {
-            "form": form,
-            "appointment": appointment,
-        }
-    )
+    return render(request, 'HospitalSystem/appointment_edit.html', {'form': form})
 
 
 @login_required
-def appointment_cancel(request,appointment_id):
+def appointment_cancel(request, appointment_id):
+    if not is_patient(request.user):
+        return redirect('dashboard')
 
     appointment = get_object_or_404(
         Appointment,
@@ -330,36 +254,13 @@ def appointment_cancel(request,appointment_id):
         patient=request.user
     )
 
-    if request.method == "POST":
-        cancelled_status = Status.objects.filter(name__iexact="Cancelled").first()
+    if request.method == 'POST':
+        cancelled_status, created = Status.objects.get_or_create(name='Cancelled')
+        appointment.appointment_status = cancelled_status
+        appointment.save()
+        messages.success( request, 'Appointment cancelled successfully.')
 
-        if cancelled_status:
-            appointment.appointment_status = (
-                cancelled_status
-            )
-
-            appointment.save()
-
-            messages.success(
-                request,
-                "Your appointment has been cancelled."
-            )
-
-        else:
-            messages.error(
-                request,
-                "Cancelled status does not exist."
-            )
-
-        return redirect("appointment_list")
-
-    return render(
-        request,
-        "HospitalSystem/appointment_cancel.html",
-        {
-            "appointment": appointment
-        }
-    )
+    return redirect('appointment_list')
 
 
 # Admin
@@ -385,7 +286,6 @@ def admin_dashboard(request):
 # Admin - Doctor
 @login_required
 def admin_doctor_list(request):
-
     if not is_admin(request.user):
         return redirect('dashboard')
 
@@ -640,7 +540,40 @@ def doctor_dashboard(request):
     if not is_doctor(request.user):
         return redirect('dashboard')
 
-    return render(request, 'Doctor/doctor_dashboard.html')
+    appointments = Appointment.objects.filter(
+        doctor=request.user
+    ).select_related(
+        'patient',
+        'department',
+        'appointment_status'
+    ).order_by(
+        'appointment_date',
+        'appointment_time'
+    )
+
+    return render(request, 'Doctor/doctor_dashboard.html', {'appointments': appointments})
+
+
+@login_required
+def doctor_appointment_status(request, appointment_id):
+    if not is_doctor(request.user):
+        return redirect('dashboard')
+
+    appointment = get_object_or_404(Appointment, id=appointment_id, doctor=request.user)
+
+    if request.method == 'POST':
+        status_name = request.POST.get('status')
+
+        if status_name not in ['Approved', 'Finished', 'Cancelled']:
+            messages.error(request, 'Invalid appointment status.')
+            return redirect('doctor_dashboard')
+
+        status, created = Status.objects.get_or_create(name=status_name)
+        appointment.appointment_status = status
+        appointment.save()
+        messages.success(request, f'Appointment status updated to {status_name}.')
+
+    return redirect('doctor_dashboard')
 
 
 # Patient

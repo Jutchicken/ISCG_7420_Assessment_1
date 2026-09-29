@@ -1,49 +1,20 @@
 {% extends "HospitalSystem/Base.html" %}
-
 {% block title %}
 Manage Appointments
 {% endblock %}
-
 {% block content %}
-
 <h1>All Appointments</h1>
-
-<a href="{% url 'admin_dashboard' %}">
-    Back to Dashboard
-</a>
-
+<a href="{% url 'admin_dashboard' %}">Back to Dashboard</a>
 <hr>
-
 {% for appointment in appointments %}
     <div>
-        <h2>
-            Appointment #{{ appointment.id }}
-        </h2>
-
-        <p>
-            Patient: {{ appointment.patient.username }}
-        </p>
-
-        <p>
-            Doctor: {{ appointment.doctor.get_full_name|default:appointment.doctor.username }}
-        </p>
-
-        <p>
-            Department: {{ appointment.department.name }}
-        </p>
-
-        <p>
-            Date: {{ appointment.appointment_date }}
-        </p>
-
-        <p>
-            Time: {{ appointment.appointment_time }}
-        </p>
-
-        <p>
-            Status: {{ appointment.appointment_status.name }}
-        </p>
-
+        <h2>Appointment #{{ appointment.id }}</h2>
+        <p>Patient: {{ appointment.patient.username }}</p>
+        <p>Doctor: {{ appointment.doctor.get_full_name|default:appointment.doctor.username }}</p>
+        <p>Department: {{ appointment.department.name }}</p>
+        <p>Date: {{ appointment.appointment_date }}</p>
+        <p>Time: {{ appointment.appointment_time }}</p>
+        <p>Status: {{ appointment.appointment_status.name }}</p>
         {% if appointment.appointment_status.name|lower != "cancelled" %}
             <a href="{% url 'admin_appointment_cancel' appointment.id %}">
                 Cancel Appointment
@@ -52,7 +23,6 @@ Manage Appointments
     </div>
     <hr>
 {% empty %}
-
     <p>No appointments found.</p>
 {% endfor %}
 {% endblock %}

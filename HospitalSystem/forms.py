@@ -67,7 +67,6 @@ class DoctorForm(forms.ModelForm):
             'email',
             'password',
             'department',
-            'doctor_details'
         ]
 
     def __init__(self, *args, **kwargs):
@@ -136,24 +135,21 @@ class DepartmentForm(forms.ModelForm):
 
     class Meta:
         model = Department
-        fields = ['department_name']
+        fields = ['name']
 
 class AppointmentForm(forms.ModelForm):
     class Meta:
         model = Appointment
         fields = [
-            'patient',
             'doctor',
-            'department',
             'appointment_date',
             'appointment_time',
-            'appointment_status',
             'appointment_details'
         ]
 
         widgets = {
-            'appointment_date': forms.DateTimeInput(
-                attrs={'type': 'datetime-local'}
+            'appointment_date': forms.DateInput(
+                attrs={'type': 'date'}
             ),
             'appointment_time': forms.TimeInput(
                 attrs={'type': 'time'}

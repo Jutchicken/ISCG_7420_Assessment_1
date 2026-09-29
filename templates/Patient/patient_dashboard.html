@@ -1,0 +1,46 @@
+{% extends 'HospitalSystem/base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Patient Dashboard</h1>
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-body">
+                    <h4>Doctors</h4>
+                    <p>View available doctors and their departments.</p>
+                    <a href="{% url 'doctor_list' %}" class="btn btn-primary">View Doctors</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-body">
+                    <h4>Book Appointment</h4>
+                    <p>Book an appointment with a doctor.</p>
+                    <a href="{% url 'book_appointment' %}" class="btn btn-success">Book Appointment</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-body">
+                    <h4>My Appointments</h4>
+                    <p>View your upcoming and previous appointments.</p>
+                    <a href="{% url 'appointment_list' %}" class="btn btn-info">View Appointments</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-body">
+                    <h4>Manage Appointments</h4>
+                    <p>Edit or cancel your appointments.</p>
+                    <a href="{% url 'appointment_list' %}" class="btn btn-warning">
+                        Manage Appointments
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

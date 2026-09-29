@@ -1,32 +1,33 @@
-{% extends "HospitalSystem/Base.html" %}
-
-{% block title %}
-Doctors
-{% endblock %}
-
+{% extends 'HospitalSystem/base.html' %}
 {% block content %}
-
-<h1>Available Doctors</h1>
-
-{% for doctor in doctors %}
-    <div class="doctor-card">
-        <h2>
-            Dr.
-            {% if doctor.user.get_full_name %}
-                {{ doctor.user.get_full_name }}
-            {% else %}
-                {{ doctor.user.username }}
-            {% endif %}
-        </h2>
-
-        <p>Department: {{ doctor.department.name }}</p>
-
-        <a href="{% url 'doctor_detail' doctor.id %}">View Schedule</a>
+<div class="container mt-5">
+    <h2 class="mb-4">Available Doctors</h2>
+    <div class="row">
+        {% for doctor in doctors %}
+            <div class="col-md-4 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-body">
+                        <h4>
+                            Dr. {{ doctor.user.get_full_name }}
+                        </h4>
+                        <p>
+                            Department: {{ doctor.department }}
+                        </p>
+                        <p>
+                            Email: {{ doctor.user.email }}
+                        </p>
+                        <a href="{% url 'doctor_detail' doctor.id %}" class="btn btn-primary">
+                            View Doctor
+                        </a>
+                        <a href="{% url 'book_appointment' %}" class="btn btn-success">
+                            Book Appointment
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <p>No doctors are currently available.</p>
+        {% endfor %}
     </div>
-    <hr>
-
-{% empty %}
-    <p>No doctors are currently available.</p>
-
-{% endfor %}
+</div>
 {% endblock %}

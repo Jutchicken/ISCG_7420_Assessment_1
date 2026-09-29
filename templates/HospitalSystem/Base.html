@@ -4,92 +4,47 @@
 <head>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrVwcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>
         {% block title %}
             Piki Ora Medical Centre
         {% endblock %}
     </title>
 </head>
-
 <body>
+<header>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                Piki Ora Medical Centre
+            </a>
 
-<nav class="navbar navbar-expand-lg bg-body-tertiary">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="{% url 'home' %}">
-            Piki Ora Medical Centre
-        </a>
+            <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent"
+                aria-expanded="false"
+                aria-label="Toggle navigation">
 
-        <button
-            class="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarSupportedContent"
-            aria-controls="navbarSupportedContent"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-        >
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'home' %}">
-                        Home
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'doctor_list' %}">
-                        Doctors
-                    </a>
-                </li>
-
-                {% if user.is_authenticated %}
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'book_appointment' %}">
-                            Book Appointment
+                        <a class="nav-link" href="{% url 'home' %}">
+                            Home
                         </a>
                     </li>
-
+                    {% if not user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'appointment_list' %}">
-                            My Appointments
+                        <a class="nav-link" href="{% url 'doctor_list' %}">
+                            Doctors
                         </a>
                     </li>
-
-                    {% if user.is_staff %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'admin_dashboard' %}">
-                                Admin Dashboard
-                            </a>
-                        </li>
-                    {% endif %}
-                {% endif %}
-            </ul>
-
-            <ul class="navbar-nav">
-                {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <span class="nav-link">
-                            {{ user.username }}
-                        </span>
-                    </li>
-
-                    <li class="nav-item">
-                        <form method="post" action="{% url 'logout' %}" class="d-inline">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-outline-danger btn-sm mt-1">
-                                Logout
-                            </button>
-                        </form>
-                    </li>
-
-                {% else %}
 
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'login' %}">
@@ -102,46 +57,97 @@
                             Register
                         </a>
                     </li>
-                {% endif %}
-            </ul>
-        </div>
-    </div>
-</nav>
-
-<div class="container mt-3">
-    {% if messages %}
-        {% for message in messages %}
-            <div
-                class="alert
-                {% if message.tags == 'success' %}
-                    alert-success
-                {% elif message.tags == 'error' %}
-                    alert-danger
-                {% elif message.tags == 'warning' %}
-                    alert-warning
                 {% else %}
-                    alert-info
+                    {% if user.is_staff %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'admin_dashboard' %}">
+                                Dashboard
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'admin_doctor_list' %}">
+                                Doctors
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'admin_patient_list' %}">
+                                Patients
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'admin_appointment_list' %}">
+                                Appointments
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'admin_department_list' %}">
+                                Departments
+                            </a>
+                        </li>
+                    {% elif is_doctor %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'doctor_dashboard' %}">
+                                Dashboard
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'appointment_list' %}">
+                                My Appointments
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'patient_dashboard' %}">
+                                Dashboard
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'doctor_list' %}">
+                                View Doctors
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'book_appointment' %}">
+                                Book Appointment
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'appointment_list' %}">
+                                My Appointments
+                            </a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <form method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+
+                            <span class="nav-link d-inline-block">
+                                {{ user.username }}
+                            </span>
+
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                Logout
+                            </button>
+                        </form>
+                    </li>
                 {% endif %}
-                "role="alert"
-            >
-                {{ message }}
+                </ul>
             </div>
-        {% endfor %}
-    {% endif %}
-
-</div>
-
-<main class="container mt-4 mb-5">
-    {% block content %}
-    {% endblock %}
-</main>
-
-<footer class="bg-body-tertiary text-center py-4 mt-5">
-    <div class="container">
-        <p class="mb-0">
-            2026 Piki Ora Medical Centre
-        </p>
-    </div>
+        </div>
+    </nav>
+</header>
+{% block content %}
+{% endblock %}
+<footer>
+    <p>2026 Piki Ora Medical Centre</p>
 </footer>
 </body>
 </html>

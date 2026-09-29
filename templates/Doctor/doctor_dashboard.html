@@ -1,0 +1,110 @@
+{% extends 'HospitalSystem/Base.html' %}
+{% block title %}Doctor Dashboard{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="mb-4">
+        <h2 class="fw-bold">Doctor Dashboard</h2>
+        <p class="text-muted mb-0">
+            Welcome, Dr. {{ user.get_full_name|default:user.username }}
+        </p>
+    </div>
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Doctor Information</h5>
+            <p class="mb-2">Name: {{ user.get_full_name|default:user.username }}</p>
+            <p class="mb-0">Email: {{ user.email }}</p>
+        </div>
+    </div>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title mb-0">My Appointments</h5>
+                <span class="badge bg-primary">
+                    {{ appointments|length }}
+                    Appointment{{ appointments|length|pluralize }}
+                </span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Patient</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appointment in appointments %}
+                        <tr>
+                            <td>
+                                <strong>
+                                    {{ appointment.patient.get_full_name|default:appointment.patient.username }}
+                                </strong>
+                            </td>
+                            <td>{{ appointment.appointment_date }}</td>
+                            <td>{{ appointment.appointment_time }}</td>
+                            <td>{{ appointment.department }}</td>
+                            <td>
+                                {% if appointment.appointment_status.name == 'Cancelled' %}
+                                    <span class="badge bg-danger">Cancelled</span>
+                                {% elif appointment.appointment_status.name == 'Finished' %}
+                                    <span class="badge bg-success">Finished</span>
+                                {% elif appointment.appointment_status.name == 'Approved' %}
+                                    <span class="badge bg-primary">Approved</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">{{ appointment.appointment_status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if appointment.appointment_details %}
+                                    {{ appointment.appointment_details }}
+                                {% else %}
+                                    <span class="text-muted">No details</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="post" action="{% url 'doctor_appointment_status' appointment.id %}">
+                                    {% csrf_token %}
+                                    <select name="status" class="form-select form-select-sm mb-2">
+
+                                        <option value="Approved"
+                                            {% if appointment.appointment_status.name == 'Approved' %}
+                                                selected
+                                            {% endif %}>
+                                            Approved
+                                        </option>
+                                        <option value="Finished"
+                                            {% if appointment.appointment_status.name == 'Finished' %}
+                                                selected
+                                            {% endif %}>
+                                            Finished
+                                        </option>
+                                        <option value="Cancelled"
+                                            {% if appointment.appointment_status.name == 'Cancelled' %}
+                                                selected
+                                            {% endif %}>
+                                            Cancelled
+                                        </option>
+                                    </select>
+                                    <button type="submit" class="btn btn-primary btn-sm w-100">Update</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <p class="text-muted mb-0">You currently have no appointments.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
