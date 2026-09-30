@@ -15,14 +15,11 @@
         <div class="col-md-6">
             <div class="card shadow">
                 <div class="card-body">
-                    <h2 class="text-center mb-4">
-                        Create Account
-                    </h2>
-
+                    <h2 class="text-center mb-4">Create Account</h2>
                     <form method="POST">
                         {% csrf_token %}
                         {% for field in form %}
-                            <div class="mb-3">
+                            <div class="mb-3" id="{{ field.name }}-container">
                                 <label class="form-label">
                                     {{ field.label }}
                                 </label>
@@ -48,5 +45,31 @@
         </div>
     </div>
 </div>
+<script>
+    const roleInputs = document.querySelectorAll('input[name="role"]');
+    const departmentContainer = document.getElementById('department-container');
+
+    function updateDepartmentVisibility() {
+        let selectedRole = '';
+
+        roleInputs.forEach(function(input) {
+            if (input.checked) {
+                selectedRole = input.value;
+            }
+        });
+
+        if (selectedRole === 'Doctor') {
+            departmentContainer.style.display = 'block';
+        } else {
+            departmentContainer.style.display = 'none';
+        }
+    }
+
+    roleInputs.forEach(function(input) {
+        input.addEventListener('change', updateDepartmentVisibility);
+    });
+
+    updateDepartmentVisibility();
+</script>
 </body>
 </html>

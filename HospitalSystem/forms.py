@@ -18,6 +18,12 @@ class RegisterForm(UserCreationForm):
         widget=forms.RadioSelect
     )
 
+    department = forms.ModelChoiceField(
+        queryset=Department.objects.all(),
+        required=False,
+        empty_label='Select Department'
+    )
+
     class Meta:
         model = User
         fields = [
@@ -26,9 +32,20 @@ class RegisterForm(UserCreationForm):
             'last_name',
             'email',
             'role',
+            'department',
             'password1',
             'password2'
         ]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        role = cleaned_data.get('role')
+        department = cleaned_data.get('department')
+
+        if role == 'Doctor' and not department:
+            self.add_error('department', 'Please select a department for a doctor.')
+
+        return cleaned_data
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -39,6 +56,10 @@ class RegisterForm(UserCreationForm):
             role = self.cleaned_data['role']
             group, created = Group.objects.get_or_create(name=role)
             user.groups.add(group)
+
+            if role == 'Doctor':
+                department = self.cleaned_data['department']
+                Doctor.objects.create(user=user, department=department)
 
         return user
 
