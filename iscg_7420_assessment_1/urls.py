@@ -20,8 +20,11 @@ from django.urls import path, include
 
 from iscg_7420_assessment_1 import settings
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/', include('HospitalSystem.api_urls')),
     path('', include('HospitalSystem.urls')),
-    path('accounts/', include("django.contrib.auth.urls"))
-]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('accounts/', include('django.contrib.auth.urls')),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

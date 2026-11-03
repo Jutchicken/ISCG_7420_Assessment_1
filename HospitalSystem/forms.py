@@ -8,7 +8,6 @@ from HospitalSystem.models import Appointment, Doctor, Department
 class RegisterForm(UserCreationForm):
     ROLE_CHOICES = (
         ('Patient', 'Patient'),
-        ('Doctor', 'Doctor'),
     )
 
     email = forms.EmailField(required=True)
