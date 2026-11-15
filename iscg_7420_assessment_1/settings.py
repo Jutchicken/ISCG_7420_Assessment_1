@@ -181,3 +181,5 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
 }
+
+load_dotenv(BASE_DIR / '.env')

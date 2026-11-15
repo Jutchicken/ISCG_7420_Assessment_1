@@ -3,6 +3,9 @@ from django.urls import path
 
 from . import api_views
 from . import auth_views
+from rest_framework.routers import DefaultRouter
+from .viewsets import AppointmentSlotViewSet
+
 
 
 urlpatterns = [
@@ -15,3 +18,13 @@ urlpatterns = [
     path('logout/', auth_views.api_logout, name='api_logout'),
     path('me/', auth_views.api_me, name='api_me'),
 ]
+
+router = DefaultRouter()
+
+router.register(
+    r'slots',
+    AppointmentSlotViewSet,
+    basename='appointment-slot'
+)
+
+urlpatterns += router.urls

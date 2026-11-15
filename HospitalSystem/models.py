@@ -38,6 +38,51 @@ class Appointment(models.Model):
     appointment_status = models.ForeignKey(Status, on_delete=models.CASCADE)
     appointment_details = models.TextField()
 
+    slot = models.ForeignKey(
+        'AppointmentSlot',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='appointments'
+    )
+
     def __str__(self):
         return f"{self.patient} - {self.appointment_date}"
+
+class AppointmentSlot(models.Model):
+    doctor = models.ForeignKey(
+        Doctor,
+        on_delete=models.CASCADE,
+        related_name='appointment_slots'
+    )
+
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    is_available = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['date', 'start_time']
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=['doctor', 'date', 'start_time'],
+                name='unique_doctor_appointment_slot'
+            ),
+
+            models.CheckConstraint(
+                condition=models.Q(
+                    end_time__gt=models.F('start_time')
+                ),
+                name='appointment_slot_valid_time'
+            )
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.doctor} - {self.date} "
+            f"{self.start_time} - {self.end_time}"
+        )
+
 
