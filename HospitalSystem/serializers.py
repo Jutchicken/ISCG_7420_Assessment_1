@@ -299,3 +299,14 @@ class AdminDoctorSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+class AppointmentRequestSerializer(serializers.Serializer):
+    slot = serializers.PrimaryKeyRelatedField(
+        queryset=AppointmentSlot.objects.all(),
+        required=False
+    )
+
+    appointment_details = serializers.CharField(
+        required=False,
+        allow_blank=True
+    )

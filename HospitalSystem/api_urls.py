@@ -4,7 +4,7 @@ from django.urls import path
 from . import api_views
 from . import auth_views
 from rest_framework.routers import DefaultRouter
-from .viewsets import AppointmentSlotViewSet, AdminDoctorViewSet
+from .viewsets import AppointmentSlotViewSet, AdminDoctorViewSet, AppointmentViewSet
 
 
 
@@ -31,6 +31,12 @@ router.register(
     r'admin/doctors',
     AdminDoctorViewSet,
     basename='admin-doctor'
+)
+
+router.register(
+    r'appointments',
+    AppointmentViewSet,
+    basename='appointment'
 )
 
 urlpatterns += router.urls
