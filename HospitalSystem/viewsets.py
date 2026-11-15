@@ -4,9 +4,10 @@ from django.utils import timezone
 
 from rest_framework import status, viewsets
 from rest_framework.response import Response
+from rest_framework.permissions import IsAdminUser
 
-from .models import AppointmentSlot
-from .serializers import AppointmentSlotSerializer
+from .models import AppointmentSlot, Doctor, Appointment
+from .serializers import AppointmentSlotSerializer, AdminDoctorSerializer
 from .permissions import IsAdminOrReadOnly
 
 
@@ -70,3 +71,55 @@ class AppointmentSlotViewSet(viewsets.ModelViewSet):
         slot.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class AdminDoctorViewSet(viewsets.ModelViewSet):
+    serializer_class = AdminDoctorSerializer
+    permission_classes = [IsAdminUser]
+
+    queryset = Doctor.objects.select_related(
+        'user',
+        'department'
+    ).all().order_by('id')
+
+    def destroy(self, request, *args, **kwargs):
+        doctor = self.get_object()
+
+        if Appointment.objects.filter(
+            doctor=doctor.user
+        ).exists():
+            return Response(
+                {
+                    'error': (
+                        'This doctor has appointment records '
+                        'and cannot be removed.'
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if doctor.appointment_slots.exists():
+            return Response(
+                {
+                    'error': (
+                        'This doctor has appointment slots '
+                        'and cannot be removed.'
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        with transaction.atomic():
+            user = doctor.user
+
+            doctor.delete()
+
+            user.is_active = False
+            user.save(update_fields=['is_active'])
+
+            # Revoke the user's authentication token.
+            from rest_framework.authtoken.models import Token
+            Token.objects.filter(user=user).delete()
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT
+        )

@@ -1,3 +1,6 @@
+from django.contrib.auth.models import User, Group
+from django.db import transaction
+
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -154,3 +157,145 @@ class AppointmentSlotSerializer(serializers.ModelSerializer):
 
         return attrs
 
+class AdminDoctorSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(
+        source='user.username'
+    )
+
+    first_name = serializers.CharField(
+        source='user.first_name'
+    )
+
+    last_name = serializers.CharField(
+        source='user.last_name'
+    )
+
+    email = serializers.EmailField(
+        source='user.email'
+    )
+
+    password = serializers.CharField(
+        write_only=True,
+        required=False,
+        style={'input_type': 'password'}
+    )
+
+    department_name = serializers.CharField(
+        source='department.name',
+        read_only=True,
+        allow_null=True
+    )
+
+    class Meta:
+        model = Doctor
+        fields = [
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'email',
+            'password',
+            'department',
+            'department_name'
+        ]
+
+    def validate(self, attrs):
+        user_data = attrs.get('user', {})
+
+        username = user_data.get('username')
+        email = user_data.get('email')
+
+        existing_user = (
+            self.instance.user
+            if self.instance else None
+        )
+
+        if username:
+            query = User.objects.filter(
+                username=username
+            )
+
+            if existing_user:
+                query = query.exclude(
+                    pk=existing_user.pk
+                )
+
+            if query.exists():
+                raise serializers.ValidationError({
+                    'username': 'Username already exists.'
+                })
+
+        if email:
+            query = User.objects.filter(
+                email__iexact=email
+            )
+
+            if existing_user:
+                query = query.exclude(
+                    pk=existing_user.pk
+                )
+
+            if query.exists():
+                raise serializers.ValidationError({
+                    'email': 'Email already exists.'
+                })
+
+        if not self.instance and not attrs.get('password'):
+            raise serializers.ValidationError({
+                'password': 'Password is required.'
+            })
+
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+        user_data = validated_data.pop('user')
+        password = validated_data.pop('password')
+
+        user = User.objects.create_user(
+            username=user_data['username'],
+            email=user_data.get('email', ''),
+            first_name=user_data.get('first_name', ''),
+            last_name=user_data.get('last_name', ''),
+            password=password,
+            is_staff=False,
+            is_superuser=False
+        )
+
+        doctor_group, _ = Group.objects.get_or_create(
+            name='Doctor'
+        )
+
+        user.groups.add(doctor_group)
+
+        doctor = Doctor.objects.create(
+            user=user,
+            **validated_data
+        )
+
+        return doctor
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', {})
+        password = validated_data.pop(
+            'password',
+            None
+        )
+
+        user = instance.user
+
+        for field, value in user_data.items():
+            setattr(user, field, value)
+
+        if password:
+            user.set_password(password)
+
+        user.save()
+
+        if 'department' in validated_data:
+            instance.department = validated_data['department']
+
+        instance.save()
+
+        return instance
