@@ -1,5 +1,6 @@
 import datetime
 
+from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -8,10 +9,11 @@ from rest_framework import status, viewsets
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.authtoken.models import Token
 
-from .models import AppointmentSlot, Doctor, Appointment, Status
+from .models import AppointmentSlot, Doctor, Appointment, Status, Department
 from .serializers import AppointmentSlotSerializer, AdminDoctorSerializer, AppointmentRequestSerializer, \
-    AppointmentSerializer
+    AppointmentSerializer, AdminPatientSerializer, DepartmentSerializer
 from .permissions import IsAdminOrReadOnly
 
 
@@ -390,3 +392,126 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         return Response({
             'message': 'Appointment canceled successfully.'
         })
+
+class AdminPatientViewSet(viewsets.ModelViewSet):
+    serializer_class = AdminPatientSerializer
+    permission_classes = [IsAdminUser]
+
+    http_method_names = [
+        'get',
+        'patch',
+        'delete',
+        'head',
+        'options'
+    ]
+
+    def get_queryset(self):
+        return User.objects.filter(
+            is_staff=False,
+            is_superuser=False,
+            doctor_profile__isnull=True
+        ).order_by('id')
+
+    def destroy(self, request, *args, **kwargs):
+        patient = self.get_object()
+
+        if not patient.is_active:
+            return Response(
+                {'message': 'Patient is already disabled.'},
+                status=status.HTTP_200_OK
+            )
+
+        with transaction.atomic():
+            patient.is_active = False
+            patient.save(update_fields=['is_active'])
+
+            Token.objects.filter(user=patient).delete()
+
+        return Response(
+            {'message': 'Patient account disabled successfully.'},
+            status=status.HTTP_200_OK
+        )
+
+    def partial_update(self, request, *args, **kwargs):
+        response = super().partial_update(request,*args,**kwargs)
+
+        if response.data.get('is_active') is False:
+            Token.objects.filter(
+                user_id=response.data['id']
+            ).delete()
+
+        return response
+
+
+
+class AdminDepartmentViewSet(viewsets.ModelViewSet):
+    serializer_class = DepartmentSerializer
+    permission_classes = [IsAdminUser]
+
+    queryset = Department.objects.all().order_by('name')
+
+    def perform_create(self, serializer):
+        name = serializer.validated_data['name'].strip()
+
+        if Department.objects.filter(
+            name__iexact=name
+        ).exists():
+            raise ValidationError({
+                'name': 'This department already exists.'
+            })
+
+        serializer.save(name=name)
+
+    def perform_update(self, serializer):
+        name = serializer.validated_data.get(
+            'name',
+            serializer.instance.name
+        ).strip()
+
+        existing = Department.objects.filter(
+            name__iexact=name
+        ).exclude(
+            pk=serializer.instance.pk
+        )
+
+        if existing.exists():
+            raise ValidationError({
+                'name': 'This department already exists.'
+            })
+
+        serializer.save(name=name)
+
+    def destroy(self, request, *args, **kwargs):
+        department = self.get_object()
+
+        if Doctor.objects.filter(
+            department=department
+        ).exists():
+            return Response(
+                {
+                    'error': (
+                        'This department has doctors '
+                        'and cannot be deleted.'
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if Appointment.objects.filter(
+            department=department
+        ).exists():
+            return Response(
+                {
+                    'error': (
+                        'This department has appointment records '
+                        'and cannot be deleted.'
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        department.delete()
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT
+        )

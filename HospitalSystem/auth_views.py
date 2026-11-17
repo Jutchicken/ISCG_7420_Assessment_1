@@ -95,4 +95,11 @@ def api_logout(request):
 @permission_classes([IsAuthenticated])
 def api_me(request):
     serializer = UserSerializer(request.user)
+
+    data = serializer.data.copy()
+
+    data['is_staff'] = request.user.is_staff
+    data['is_superuser'] = request.user.is_superuser
+    data['is_doctor'] = hasattr(request.user, 'doctor_profile')
+
     return Response(serializer.data)

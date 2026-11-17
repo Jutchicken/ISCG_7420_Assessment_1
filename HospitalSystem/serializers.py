@@ -77,7 +77,8 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'appointment_time',
             'appointment_status',
             'status_name',
-            'appointment_details'
+            'appointment_details',
+            'slot'
         ]
 
 class AppointmentSlotSerializer(serializers.ModelSerializer):
@@ -310,3 +311,34 @@ class AppointmentRequestSerializer(serializers.Serializer):
         required=False,
         allow_blank=True
     )
+
+
+class AdminPatientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'email',
+            'is_active'
+        ]
+        read_only_fields = ['id', 'username']
+
+    def validate_email(self, value):
+        existing = User.objects.filter(
+            email__iexact=value
+        )
+
+        if self.instance:
+            existing = existing.exclude(
+                pk=self.instance.pk
+            )
+
+        if value and existing.exists():
+            raise serializers.ValidationError(
+                'This email is already in use.'
+            )
+
+        return value

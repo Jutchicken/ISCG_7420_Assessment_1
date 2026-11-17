@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation  } from "react-router-dom";
 import api from "../api/client";
 
 function Login() {
@@ -13,6 +13,8 @@ function Login() {
     const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
+    const location = useLocation();
+    const registrationMessage = location.state?.message;
 
     async function login(e) {
         e.preventDefault();
@@ -35,7 +37,18 @@ function Login() {
             localStorage.setItem("token", token);
             setIsLogin(true);
 
-            navigate("/my-appointments");
+            const userResponse = await api.get("me/");
+            const user = userResponse.data;
+
+            if (user.is_staff || user.is_superuser) {
+                navigate("/admin/doctors");
+            }
+            else if (user.is_doctor) {
+                navigate("/doctor-dashboard");
+            }
+            else {
+                navigate("/my-appointments");
+            }
 
         } catch (error) {
             setError(
@@ -79,7 +92,13 @@ function Login() {
         <div className="container mt-5">
             <h2>Patient Login</h2>
 
-            {error && (<div className="alert alert-danger">{error}</div>)}
+            {registrationMessage && (<div className="alert alert-success">
+                {registrationMessage}
+            </div>)}
+
+            {error && (<div className="alert alert-danger">
+                {error}
+            </div>)}
 
             <form onSubmit={login}>
                 <div className="mb-3">

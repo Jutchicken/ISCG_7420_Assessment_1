@@ -1,12 +1,14 @@
-
 import React, { useEffect, useState } from "react";
 import api from "../api/client";
+import { useLocation } from "react-router-dom";
 
 function PatientAppointments() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const location = useLocation();
+  const bookingMessage = location.state?.message;
 
   const loadAppointments = async () => {
     try {
@@ -45,7 +47,8 @@ function PatientAppointments() {
 
       setMessage("Appointment canceled successfully.");
       await loadAppointments();
-    } catch (err) {
+    }
+    catch (err) {
       const data = err.response?.data;
 
       setError(
@@ -58,41 +61,35 @@ function PatientAppointments() {
   };
 
   const getStatus = (appointment) => {
-    const status = appointment.appointment_status;
-
-    if (typeof status === "object" && status !== null) {
-      return status.name || "Unknown";
-    }
-
-    if (typeof status === "string") {
-      return status;
-    }
-
-    return appointment.status_name || String(status ?? "Unknown");
+    return appointment.status_name || "Unknown";
   };
 
   return (
     <div className="container py-4">
       <h2 className="mb-4">My Appointments</h2>
 
+      {bookingMessage && (
+          <div className="alert alert-success">{bookingMessage}</div>
+      )}
+
       {message && (
-        <div className="alert alert-success">{message}</div>
+          <div className="alert alert-success">{message}</div>
       )}
 
       {error && (
-        <div className="alert alert-danger">{error}</div>
+          <div className="alert alert-danger">{error}</div>
       )}
 
       {loading ? (
-        <p>Loading appointments...</p>
+          <p>Loading appointments...</p>
       ) : appointments.length === 0 ? (
-        <div className="alert alert-info">
-          You have no appointments.
-        </div>
+          <div className="alert alert-info">
+            You have no appointments.
+          </div>
       ) : (
-        <div className="table-responsive">
-          <table className="table table-striped align-middle">
-            <thead>
+          <div className="table-responsive">
+            <table className="table table-striped align-middle">
+              <thead>
               <tr>
                 <th>Doctor</th>
                 <th>Date</th>
@@ -105,10 +102,8 @@ function PatientAppointments() {
 
             <tbody>
               {appointments.map((appointment) => {
-                const appointmentStatus =
-                  getStatus(appointment).toLowerCase();
-
-                const canCancel = ["pending", "approved",].includes(appointmentStatus);
+                const appointmentStatus = getStatus(appointment).toLowerCase();
+                const canCancel = ["pending", "approved"].includes(appointmentStatus);
 
                 return (
                   <tr key={appointment.id}>
