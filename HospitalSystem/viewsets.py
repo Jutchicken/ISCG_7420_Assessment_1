@@ -503,7 +503,9 @@ class AdminPatientViewSet(viewsets.ModelViewSet):
             is_staff=False,
             is_superuser=False,
             doctor_profile__isnull=True
-        ).order_by('id')
+        ).exclude(
+            groups__name="Doctor"
+        ).distinct().order_by("id")
 
     def destroy(self, request, *args, **kwargs):
         patient = self.get_object()
