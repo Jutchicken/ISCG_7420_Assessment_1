@@ -6,7 +6,6 @@ from rest_framework.routers import DefaultRouter
 from .viewsets import AppointmentSlotViewSet, AdminDoctorViewSet, AppointmentViewSet, AdminPatientViewSet, AdminDepartmentViewSet
 
 
-
 urlpatterns = [
     path('', api_views.api_home, name='api_home'),
     path('departments/', api_views.api_departments, name='api_departments'),
