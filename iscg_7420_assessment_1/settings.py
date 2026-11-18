@@ -169,8 +169,9 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://iscg-7420-hospital-frontend.onrender.com",
 ]
 
 render_frontend = os.getenv("FRONTEND_URL")
