@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import api from "../api/client";
-import { useLocation } from "react-router-dom";
+import api from "../../api/client";
+import { useLocation, useNavigate } from "react-router-dom";
 
 function PatientAppointments() {
   const [appointments, setAppointments] = useState([]);
@@ -9,30 +9,25 @@ function PatientAppointments() {
   const [message, setMessage] = useState("");
   const location = useLocation();
   const bookingMessage = location.state?.message;
+  const navigate = useNavigate();
 
   const loadAppointments = async () => {
     try {
       setError("");
-
       const response = await api.get("appointments/");
       const data = response.data;
 
-      setAppointments(
-        Array.isArray(data) ? data : data.results || []
-      );
-    } catch (err) {
-      setError(
-        err.response?.data?.detail ||
-          "Failed to load appointments."
-      );
-    } finally {
+      setAppointments(Array.isArray(data) ? data : data.results || []);
+    }
+    catch (err) {
+      setError(err.response?.data?.detail || "Failed to load appointments.");
+    }
+    finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadAppointments();
-  }, []);
+  useEffect(() => {loadAppointments();}, []);
 
   const handleCancel = async (id) => {
     if (!window.confirm("Cancel this appointment?")) {
@@ -68,24 +63,12 @@ function PatientAppointments() {
     <div className="container py-4">
       <h2 className="mb-4">My Appointments</h2>
 
-      {bookingMessage && (
-          <div className="alert alert-success">{bookingMessage}</div>
-      )}
+      {bookingMessage && (<div className="alert alert-success">{bookingMessage}</div>)}
+      {message && (<div className="alert alert-success">{message}</div>)}
+      {error && (<div className="alert alert-danger">{error}</div>)}
 
-      {message && (
-          <div className="alert alert-success">{message}</div>
-      )}
-
-      {error && (
-          <div className="alert alert-danger">{error}</div>
-      )}
-
-      {loading ? (
-          <p>Loading appointments...</p>
-      ) : appointments.length === 0 ? (
-          <div className="alert alert-info">
-            You have no appointments.
-          </div>
+      {loading ? (<p>Loading appointments...</p>) : appointments.length === 0 ? (
+          <div className="alert alert-info">You have no appointments.</div>
       ) : (
           <div className="table-responsive">
             <table className="table table-striped align-middle">
@@ -104,6 +87,7 @@ function PatientAppointments() {
               {appointments.map((appointment) => {
                 const appointmentStatus = getStatus(appointment).toLowerCase();
                 const canCancel = ["pending", "approved"].includes(appointmentStatus);
+                const canEdit = ["pending", "approved"].includes(appointmentStatus);
 
                 return (
                   <tr key={appointment.id}>
@@ -113,6 +97,12 @@ function PatientAppointments() {
                     <td>{getStatus(appointment)}</td>
                     <td>{appointment.appointment_details}</td>
                     <td>
+                      {canEdit && (
+                        <button className="btn btn-warning btn-sm me-2" onClick={() => navigate(`/edit-appointment/${appointment.id}`)}>
+                          Edit
+                        </button>
+                      )}
+                      
                       {canCancel && (
                         <button className="btn btn-danger btn-sm" onClick={() => handleCancel(appointment.id)}>
                           Cancel

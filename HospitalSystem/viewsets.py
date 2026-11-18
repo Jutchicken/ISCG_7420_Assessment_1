@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
@@ -10,6 +10,7 @@ from rest_framework.exceptions import ValidationError, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.authtoken.models import Token
+from rest_framework.decorators import action
 
 from .models import AppointmentSlot, Doctor, Appointment, Status, Department
 from .serializers import AppointmentSlotSerializer, AdminDoctorSerializer, AppointmentRequestSerializer, \
@@ -20,6 +21,11 @@ from .permissions import IsAdminOrReadOnly
 class AppointmentSlotViewSet(viewsets.ModelViewSet):
     serializer_class = AppointmentSlotSerializer
     permission_classes = [IsAdminOrReadOnly]
+
+    http_method_names = [
+        'get', 'post', 'patch', 'delete',
+        'head', 'options'
+    ]
 
     def get_queryset(self):
         queryset = AppointmentSlot.objects.select_related(
@@ -59,6 +65,40 @@ class AppointmentSlotViewSet(viewsets.ModelViewSet):
             serializer.data,
             status=status.HTTP_201_CREATED
         )
+
+    def partial_update(self, request, *args, **kwargs):
+        with transaction.atomic():
+            slot = AppointmentSlot.objects.select_for_update().get(pk=self.get_object().pk)
+
+            active_appointments = slot.appointments.filter(
+                Q(appointment_status__name__iexact='pending') |
+                Q(appointment_status__name__iexact='approved')
+            )
+
+            if active_appointments.exists():
+                raise ValidationError({'error': 'This slot is already booked.'})
+
+            if slot.appointments.exists():
+                protected_fields = [
+                    'doctor',
+                    'date',
+                    'start_time',
+                    'end_time'
+                ]
+
+                if any(field in request.data for field in protected_fields):
+                    raise ValidationError({
+                        'error': (
+                            'A slot with appointment history cannot '
+                            'change its doctor or time.'
+                        )
+                    })
+
+            serializer = self.get_serializer(slot, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
         slot = self.get_object()
@@ -207,13 +247,21 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 'slot': 'Doctor has no department.'
             })
 
-        conflicts = Appointment.objects.filter(
+        conflicts = (Appointment.objects.filter(
             doctor=slot.doctor.user,
-            appointment_date=slot.date,
-            appointment_time=slot.start_time
-        ).filter(
-            self.active_status_filter()
+            appointment_date=slot.date
         )
+        .filter(self.active_status_filter()).
+        filter(
+            Q(
+                slot__start_time__lt=slot.end_time,
+                slot__end_time__gt=slot.start_time
+            ) |
+            Q(
+                slot__isnull=True,
+                appointment_time=slot.start_time
+            )
+        ))
 
         if exclude_id is not None:
             conflicts = conflicts.exclude(pk=exclude_id)
@@ -245,10 +293,9 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             })
 
         with transaction.atomic():
-            slot = AppointmentSlot.objects.select_for_update().select_related(
-                'doctor__user',
-                'doctor__department'
-            ).get(pk=requested_slot.pk)
+            slot = AppointmentSlot.objects.select_for_update().get(
+                pk=requested_slot.pk
+            )
 
             self.check_slot(slot)
 
@@ -357,6 +404,52 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             AppointmentSerializer(appointment).data
         )
 
+    @action(detail=True, methods=['post'], url_path='doctor-status')
+    def doctor_status(self, request, pk=None):
+        if (request.user.is_staff or not Doctor.objects.filter(user=request.user).exists()):
+            raise PermissionDenied('Only doctors can manage their appointments.')
+
+        decision = request.data.get('status')
+
+        if decision not in ['approved', 'canceled']:
+            raise ValidationError({'status': 'Choose approved or canceled.'})
+
+        with transaction.atomic():
+            appointment = Appointment.objects.select_for_update().get(pk=self.get_object().pk)
+
+            if appointment.doctor_id != request.user.id:
+                raise PermissionDenied('You can only manage your own appointments.')
+
+            current_status = appointment.appointment_status.name.lower()
+
+            if decision == 'approved':
+                if current_status != 'pending':
+                    raise ValidationError({'status': 'Only pending appointments can be approved.'})
+                appointment.appointment_status = self.get_status('approved')
+
+            elif decision == 'canceled':
+                if current_status not in ['pending', 'approved']:
+                    raise ValidationError({'status': 'This appointment cannot be canceled.'})
+
+                if appointment.slot_id:
+                    slot = AppointmentSlot.objects.select_for_update().get(
+                        pk=appointment.slot_id
+                    )
+
+                    slot.is_available = True
+                    slot.save(update_fields=['is_available'])
+
+                appointment.appointment_status = self.get_status('canceled')
+
+            appointment.save(update_fields=['appointment_status'])
+
+        return Response({
+            'message': f'Appointment {decision} successfully.',
+            'appointment': AppointmentSerializer(appointment).data
+        })
+
+
+
     def destroy(self, request, *args, **kwargs):
         if Doctor.objects.filter(user=request.user).exists() and not request.user.is_staff:
             raise PermissionDenied(
@@ -448,7 +541,7 @@ class AdminDepartmentViewSet(viewsets.ModelViewSet):
     serializer_class = DepartmentSerializer
     permission_classes = [IsAdminUser]
 
-    queryset = Department.objects.all().order_by('name')
+    queryset =  Department.objects.all().order_by('name')
 
     def perform_create(self, serializer):
         name = serializer.validated_data['name'].strip()

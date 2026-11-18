@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import api from "../api/client";
+import api from "../../api/client";
 
 function DoctorDashboard() {
     const [appointments, setAppointments] = useState([]);
@@ -19,10 +19,7 @@ function DoctorDashboard() {
                 setAppointments(data);
             }
             catch (err) {
-                setError(
-                    err.response?.data?.detail ||
-                    "Failed to load appointments."
-                );
+                setError(err.response?.data?.detail || "Failed to load appointments.");
             }
             finally {
                 setLoading(false);
@@ -81,6 +78,40 @@ function DoctorDashboard() {
         }
     };
 
+    const handleDecision = async (appointmentId, decision) => {
+        const message = decision === "approved" ? "Confirm this appointment?" : "Cancel this appointment?";
+
+        if (!window.confirm(message)) {
+            return;
+        }
+
+        try {
+            await api.post(`appointments/${appointmentId}/doctor-status/`, { status: decision });
+
+            const response = await api.get("appointments/");
+            const data = response.data;
+
+            setAppointments(Array.isArray(data) ? data : data.results || []);
+
+            alert(
+                decision === "approved"
+                    ? "Appointment confirmed successfully."
+                    : "Appointment canceled successfully."
+            );
+        }
+        catch (err) {
+            const data = err.response?.data;
+
+            alert(
+                data?.status?.[0] ||
+                data?.detail ||
+                data?.error ||
+                "Failed to update appointment."
+            );
+        }
+    };
+
+
     return (
         <div className="container py-4">
             <h2 className="mb-4">Doctor Dashboard</h2>
@@ -121,33 +152,27 @@ function DoctorDashboard() {
             </div>
 
             <div className="btn-group mb-4">
-                <button
-                    className={`btn ${
-                        activeTab === "upcoming"
-                            ? "btn-primary"
-                            : "btn-outline-primary"
-                    }`}
-                    onClick={() => setActiveTab("upcoming")}>
+                <button className={`btn ${
+                    activeTab === "upcoming"
+                        ? "btn-primary"
+                        : "btn-outline-primary"
+                }`} onClick={() => setActiveTab("upcoming")}>
                     Upcoming
                 </button>
 
-                <button
-                    className={`btn ${
-                        activeTab === "history"
-                            ? "btn-primary"
-                            : "btn-outline-primary"
-                    }`}
-                    onClick={() => setActiveTab("history")}>
+                <button className={`btn ${
+                    activeTab === "history"
+                        ? "btn-primary"
+                        : "btn-outline-primary"
+                }`} onClick={() => setActiveTab("history")}>
                     History
                 </button>
 
-                <button
-                    className={`btn ${
-                        activeTab === "all"
-                            ? "btn-primary"
-                            : "btn-outline-primary"
-                    }`}
-                    onClick={() => setActiveTab("all")}>
+                <button className={`btn ${
+                    activeTab === "all"
+                        ? "btn-primary"
+                        : "btn-outline-primary"
+                    }`} onClick={() => setActiveTab("all")}>
                     All Appointments
                 </button>
             </div>
@@ -169,13 +194,12 @@ function DoctorDashboard() {
                                 <th>Department</th>
                                 <th>Details</th>
                                 <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
-
                         <tbody>
                             {displayedAppointments.map((appointment) => {
-                                const status = getStatus(appointment);
-
+                                const status = getStatus(appointment).toLowerCase();
                                 return (
                                     <tr key={appointment.id}>
                                         <td>{appointment.patient_name}</td>
@@ -183,10 +207,27 @@ function DoctorDashboard() {
                                         <td>{appointment.appointment_time}</td>
                                         <td>{appointment.department_name}</td>
                                         <td>{appointment.appointment_details}</td>
+
                                         <td>
                                             <span className={`badge ${getBadgeColor(status)}`}>
                                                 {appointment.status_name}
                                             </span>
+                                        </td>
+
+                                        <td>
+                                            {status === "pending" && (
+                                                <button className="btn btn-success btn-sm me-2"
+                                                    onClick={() => handleDecision(appointment.id, "approved")}>
+                                                    Confirm
+                                                </button>
+                                            )}
+
+                                            {["pending", "approved"].includes(status) && (
+                                                <button className="btn btn-danger btn-sm"
+                                                    onClick={() => handleDecision(appointment.id, "canceled")}>
+                                                    Cancel
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 );

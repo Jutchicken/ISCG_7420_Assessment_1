@@ -173,6 +173,13 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3000',
 ]
 
+render_frontend = os.getenv("FRONTEND_URL")
+
+if render_frontend:
+    CORS_ALLOWED_ORIGINS.append(
+        render_frontend.rstrip("/")
+    )
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, useLocation  } from "react-router-dom";
 import api from "../api/client";
@@ -6,9 +5,7 @@ import api from "../api/client";
 function Login() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-    const [isLogin, setIsLogin] = useState(
-        Boolean(localStorage.getItem("token"))
-    );
+    const [isLogin, setIsLogin] = useState(Boolean(localStorage.getItem("token")));
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -37,11 +34,12 @@ function Login() {
             localStorage.setItem("token", token);
             setIsLogin(true);
 
+
             const userResponse = await api.get("me/");
             const user = userResponse.data;
 
             if (user.is_staff || user.is_superuser) {
-                navigate("/admin/doctors");
+                navigate("/admin/dashboard");
             }
             else if (user.is_doctor) {
                 navigate("/doctor-dashboard");
@@ -90,7 +88,7 @@ function Login() {
 
     return (
         <div className="container mt-5">
-            <h2>Patient Login</h2>
+            <h2>Hospital Login</h2>
 
             {registrationMessage && (<div className="alert alert-success">
                 {registrationMessage}

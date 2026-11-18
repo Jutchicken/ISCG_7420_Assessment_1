@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/client";
+import api from "../../api/client";
 
 function BookAppointment() {
     const navigate = useNavigate();

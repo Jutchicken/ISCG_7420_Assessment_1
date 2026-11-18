@@ -102,4 +102,4 @@ def api_me(request):
     data['is_superuser'] = request.user.is_superuser
     data['is_doctor'] = hasattr(request.user, 'doctor_profile')
 
-    return Response(serializer.data)
+    return Response(data)
