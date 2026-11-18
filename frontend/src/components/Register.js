@@ -51,20 +51,18 @@ function Register() {
         } catch (err) {
             const data = err.response?.data;
 
+            console.error("Registration error:", err.response?.status, data);
+
             if (data && typeof data === "object") {
-                const errors = Object.entries(data)
-                    .map(([field, value]) => {
-                        const text = Array.isArray(value)
-                            ? value.join(" ")
-                            : String(value);
+                const messages = Object.entries(data).flatMap(([field, errors]) =>
+                    (Array.isArray(errors) ? errors : [errors]).map(
+                        (message) => `${field}: ${message}`
+                    )
+                );
 
-                        return `${field}: ${text}`;
-                    });
-
-                setError(errors.join(" | "));
-            }
-            else {
-                setError("Registration failed.");
+                setError(messages.join(" | "));
+            } else {
+                setError("Registration failed. Please try again.");
             }
         }
         finally {
